@@ -91,6 +91,8 @@ release:
 
 brews:
   - name: exa
+    ids:
+      - archive
     repository:
       owner: 12458
       name: homebrew-tap
