@@ -434,15 +434,15 @@ func isQuietMode(cmd *cli.Command) bool {
 	return cmd.Root().Bool("quiet")
 }
 
-// truncateURL truncates a URL to maxLen characters
-func truncateURL(url string, maxLen int) string {
-	if len(url) <= maxLen {
-		return url
+// truncate truncates a string to maxLen characters
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
 	}
-	return url[:maxLen-3] + "..."
+	return s[:maxLen-3] + "..."
 }
 
-func printSearchTable(resp *client.SearchResponse) {
+func printSearchTable(cmd *cli.Command, resp *client.SearchResponse) {
 	useColor := isTerminal()
 
 	// Disable color globally if not a TTY
@@ -453,26 +453,67 @@ func printSearchTable(resp *client.SearchResponse) {
 	headerFmt := color.New(color.FgWhite, color.Bold).SprintFunc()
 	numFmt := color.New(color.FgCyan).SprintFunc()
 
-	tbl := table.New("#", "Title", "URL", "Published")
+	// Determine which columns to show based on flags
+	showText := cmd.Bool("text")
+	showSummary := cmd.Bool("summary") || cmd.String("summary-query") != "" || cmd.String("summary-schema") != ""
+
+	// Build dynamic column headers
+	var headers []any
+	headers = append(headers, "#", "Title", "URL")
+	if showText {
+		headers = append(headers, "Text")
+	}
+	if showSummary {
+		headers = append(headers, "Summary")
+	}
+	if !showText && !showSummary {
+		headers = append(headers, "Published")
+	}
+
+	tbl := table.New(headers...)
 	tbl.WithHeaderFormatter(func(format string, vals ...interface{}) string {
 		return headerFmt(fmt.Sprintf(format, vals...))
 	})
 
+	// Use shorter title when showing text/summary columns
+	titleMaxLen := 55
+	if showText || showSummary {
+		titleMaxLen = 40
+	}
+
 	for i, r := range resp.Results {
-		date := r.PublishedDate
-		if date == "" {
-			date = "-"
-		}
-		title := r.Title
-		if len(title) > 55 {
-			title = title[:52] + "..."
-		}
-		url := truncateURL(r.URL, 45)
+		title := truncate(r.Title, titleMaxLen)
+		url := truncate(r.URL, 45)
 		num := fmt.Sprintf("%d", i+1)
 		if useColor {
 			num = numFmt(num)
 		}
-		tbl.AddRow(num, title, url, date)
+
+		// Build row based on columns
+		var row []any
+		row = append(row, num, title, url)
+		if showText {
+			text := truncate(r.Text, 60)
+			if text == "" {
+				text = "-"
+			}
+			row = append(row, text)
+		}
+		if showSummary {
+			summary := truncate(r.Summary, 60)
+			if summary == "" {
+				summary = "-"
+			}
+			row = append(row, summary)
+		}
+		if !showText && !showSummary {
+			date := r.PublishedDate
+			if date == "" {
+				date = "-"
+			}
+			row = append(row, date)
+		}
+		tbl.AddRow(row...)
 	}
 	tbl.Print()
 }
@@ -563,7 +604,7 @@ func printOutput(cmd *cli.Command, v any) error {
 	default: // "table"
 		switch resp := v.(type) {
 		case *client.SearchResponse:
-			printSearchTable(resp)
+			printSearchTable(cmd, resp)
 		case *client.ContentsResponse:
 			printContentsMarkdown(resp)
 		default:
