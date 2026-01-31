@@ -193,15 +193,10 @@ func searchCmd() *cli.Command {
 
 func contentsCmd() *cli.Command {
 	return &cli.Command{
-		Name:  "contents",
-		Usage: "Get contents from URLs",
+		Name:      "contents",
+		Usage:     "Get contents from URLs",
+		ArgsUsage: "<url> [url...]",
 		Flags: []cli.Flag{
-			&cli.StringSliceFlag{
-				Name:     "url",
-				Aliases:  []string{"u"},
-				Usage:    "URLs to fetch content from (can specify multiple)",
-				Required: true,
-			},
 			&cli.BoolFlag{
 				Name:  "text",
 				Usage: "Include full text content",
@@ -261,13 +256,17 @@ func contentsCmd() *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			if cmd.Args().Len() == 0 {
+				return fmt.Errorf("at least one URL is required")
+			}
+
 			c, err := client.New(cmd.Root().String("api-key"))
 			if err != nil {
 				return err
 			}
 
 			req := &client.ContentsRequest{
-				IDs: cmd.StringSlice("url"),
+				IDs: cmd.Args().Slice(),
 			}
 
 			// Build text options
