@@ -1,0 +1,107 @@
+version: 2
+
+project_name: exa
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: exa
+    binary: exa
+    main: .
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - "7"
+    ignore:
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: binary
+    format: binary
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+
+  - id: archive
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - '^chore:'
+      - Merge pull request
+      - Merge branch
+
+release:
+  github:
+    owner: 12458
+    name: exa-cli
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## Installation
+
+    ### Quick Install (Linux/macOS)
+    ```bash
+    curl -fsSL https://exa.tools.shangen.org/install.sh | bash
+    ```
+
+    ### Manual Download
+    Download the appropriate binary for your platform below.
+
+    ### Homebrew (macOS/Linux)
+    ```bash
+    brew install 12458/tap/exa
+    ```
+
+  footer: |
+    ---
+    **Full Changelog**: https://github.com/12458/exa-cli/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+brews:
+  - name: exa
+    repository:
+      owner: 12458
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/12458/exa-cli"
+    description: "CLI tool for the Exa API"
+    license: "MIT"
+    install: |
+      bin.install "exa"
+      generate_completions_from_executable(bin/"exa", "completion")
+    test: |
+      system "#{bin}/exa", "--help"
+    skip_upload: auto

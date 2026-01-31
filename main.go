@@ -18,10 +18,18 @@ import (
 	"golang.org/x/term"
 )
 
+// Version information set by ldflags during build
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
 	cmd := &cli.Command{
 		Name:                  "exa",
 		Usage:                 "CLI tool for the Exa API",
+		Version:               version,
 		DefaultCommand:        "search",
 		EnableShellCompletion: true,
 		Flags: []cli.Flag{
@@ -47,6 +55,7 @@ func main() {
 			contentsCmd(),
 			configureCmd(),
 			completionCmd(),
+			versionCmd(),
 		},
 	}
 
@@ -455,6 +464,19 @@ func completionCmd() *cli.Command {
 	}
 }
 
+func versionCmd() *cli.Command {
+	return &cli.Command{
+		Name:  "version",
+		Usage: "Show detailed version information",
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			fmt.Printf("exa %s\n", version)
+			fmt.Printf("  commit: %s\n", commit)
+			fmt.Printf("  built:  %s\n", date)
+			return nil
+		},
+	}
+}
+
 const bashCompletion = `# bash completion for exa CLI
 _exa_completions() {
     local cur prev opts commands
@@ -462,7 +484,7 @@ _exa_completions() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    commands="search contents configure completion help"
+    commands="search contents configure completion version help"
     global_opts="--api-key --output -o --quiet -q --help -h"
     search_opts="--type -t --num-results -n --text --text-max-chars --text-include-html --text-verbosity --highlights -H --summary -s --summary-query --summary-schema --include-domains -i --exclude-domains -x --start-published-date --end-published-date --category -c --max-age-hours"
     contents_opts="--text -t --text-max-chars --text-include-html --text-verbosity --highlights -H --summary -s --summary-query --summary-schema --subpages -p --subpage-target --max-age-hours --livecrawl-timeout --context -C --context-max-chars"
@@ -504,6 +526,7 @@ _exa() {
         'c:Get contents from URLs'
         'configure:Configure exa CLI settings'
         'completion:Generate shell completion scripts'
+        'version:Show detailed version information'
         'help:Shows a list of commands or help for one command'
     )
 
@@ -582,6 +605,7 @@ complete -c exa -n __fish_use_subcommand -a contents -d 'Get contents from URLs'
 complete -c exa -n __fish_use_subcommand -a c -d 'Get contents from URLs'
 complete -c exa -n __fish_use_subcommand -a configure -d 'Configure exa CLI settings'
 complete -c exa -n __fish_use_subcommand -a completion -d 'Generate shell completion scripts'
+complete -c exa -n __fish_use_subcommand -a version -d 'Show detailed version information'
 complete -c exa -n __fish_use_subcommand -a help -d 'Shows help'
 
 # Global options
