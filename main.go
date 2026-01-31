@@ -36,15 +36,10 @@ func main() {
 
 func searchCmd() *cli.Command {
 	return &cli.Command{
-		Name:  "search",
-		Usage: "Search the web using Exa",
+		Name:      "search",
+		Usage:     "Search the web using Exa",
+		ArgsUsage: "<query>",
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     "query",
-				Aliases:  []string{"q"},
-				Usage:    "Search query",
-				Required: true,
-			},
 			&cli.StringFlag{
 				Name:  "type",
 				Usage: "Search type: auto, fast",
@@ -113,13 +108,18 @@ func searchCmd() *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			if cmd.Args().Len() == 0 {
+				return fmt.Errorf("query is required")
+			}
+			query := cmd.Args().First()
+
 			c, err := client.New(cmd.Root().String("api-key"))
 			if err != nil {
 				return err
 			}
 
 			req := &client.SearchRequest{
-				Query:      cmd.String("query"),
+				Query:      query,
 				Type:       cmd.String("type"),
 				NumResults: int(cmd.Int("num-results")),
 			}
