@@ -89,7 +89,7 @@ release:
     ---
     **Full Changelog**: https://github.com/12458/exa-cli/compare/{{ .PreviousTag }}...{{ .Tag }}
 
-brews:
+homebrew_casks:
   - name: exa
     ids:
       - archive
@@ -97,13 +97,6 @@ brews:
       owner: 12458
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    directory: Formula
     homepage: "https://github.com/12458/exa-cli"
     description: "CLI tool for the Exa API"
-    license: "MIT"
-    install: |
-      bin.install "exa"
-      generate_completions_from_executable(bin/"exa", "completion")
-    test: |
-      system "#{bin}/exa", "--help"
     skip_upload: auto
