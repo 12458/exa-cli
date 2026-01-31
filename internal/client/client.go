@@ -26,7 +26,7 @@ func New(apiKey string) (*Client, error) {
 		apiKey = os.Getenv(apiKeyEnv)
 	}
 	if apiKey == "" {
-		return nil, fmt.Errorf("API key required: set %s environment variable or use --api-key flag", apiKeyEnv)
+		return nil, fmt.Errorf("API key required. Set EXA_API_KEY env var, use --api-key flag, or run 'exa configure'. Get your key at https://dashboard.exa.ai/api-keys")
 	}
 
 	return &Client{

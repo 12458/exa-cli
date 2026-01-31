@@ -6,18 +6,23 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"12458/exa-cli/internal/client"
+	"12458/exa-cli/internal/config"
 
+	"github.com/fatih/color"
 	"github.com/rodaine/table"
 	"github.com/toon-format/toon-go"
 	"github.com/urfave/cli/v3"
+	"golang.org/x/term"
 )
 
 func main() {
 	cmd := &cli.Command{
-		Name:  "exa",
-		Usage: "CLI tool for the Exa API",
+		Name:           "exa",
+		Usage:          "CLI tool for the Exa API",
+		DefaultCommand: "search",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "api-key",
@@ -30,10 +35,16 @@ func main() {
 				Usage:   "Output format: table, json, toon",
 				Value:   "table",
 			},
+			&cli.BoolFlag{
+				Name:    "quiet",
+				Aliases: []string{"q"},
+				Usage:   "Quiet mode: output only URLs (search) or text (contents) for scripting",
+			},
 		},
 		Commands: []*cli.Command{
 			searchCmd(),
 			contentsCmd(),
+			configureCmd(),
 		},
 	}
 
@@ -42,11 +53,32 @@ func main() {
 	}
 }
 
+// isTerminal returns true if stdout is a terminal (not piped)
+func isTerminal() bool {
+	return term.IsTerminal(int(os.Stdout.Fd()))
+}
+
+// getAPIKey returns the API key from flag, env var, or config file (in that priority order)
+func getAPIKey(cmd *cli.Command) string {
+	// Check flag/env first (handled by cli library)
+	if key := cmd.Root().String("api-key"); key != "" {
+		return key
+	}
+	// Fall back to config file
+	return config.GetAPIKey()
+}
+
 func searchCmd() *cli.Command {
 	return &cli.Command{
 		Name:      "search",
+		Aliases:   []string{"s"},
 		Usage:     "Search the web using Exa",
 		ArgsUsage: "<query>",
+		UsageText: `Examples:
+  exa search "latest AI news"
+  exa search -n 5 --summary "golang best practices"
+  exa search -i github.com -i stackoverflow.com "error handling"
+  exa search -c news --max-age-hours 24 "tech layoffs"`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "type",
@@ -128,7 +160,7 @@ func searchCmd() *cli.Command {
 			}
 			query := cmd.Args().First()
 
-			c, err := client.New(cmd.Root().String("api-key"))
+			c, err := client.New(getAPIKey(cmd))
 			if err != nil {
 				return err
 			}
@@ -209,8 +241,13 @@ func searchCmd() *cli.Command {
 func contentsCmd() *cli.Command {
 	return &cli.Command{
 		Name:      "contents",
+		Aliases:   []string{"c"},
 		Usage:     "Get contents from URLs",
 		ArgsUsage: "<url> [url...]",
+		UsageText: `Examples:
+  exa contents https://example.com
+  exa contents --summary https://example.com https://another.com
+  exa contents -q https://example.com | head -100`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:    "text",
@@ -267,7 +304,7 @@ func contentsCmd() *cli.Command {
 			},
 			&cli.BoolFlag{
 				Name:    "context",
-				Aliases: []string{"c"},
+				Aliases: []string{"C"},
 				Usage:   "Return all results combined into a single string for RAG",
 			},
 			&cli.IntFlag{
@@ -280,7 +317,7 @@ func contentsCmd() *cli.Command {
 				return fmt.Errorf("at least one URL is required")
 			}
 
-			c, err := client.New(cmd.Root().String("api-key"))
+			c, err := client.New(getAPIKey(cmd))
 			if err != nil {
 				return err
 			}
@@ -352,6 +389,37 @@ func contentsCmd() *cli.Command {
 	}
 }
 
+func configureCmd() *cli.Command {
+	return &cli.Command{
+		Name:  "configure",
+		Usage: "Configure exa CLI settings (API key)",
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			fmt.Print("Enter your Exa API key: ")
+
+			// Read password with masked input
+			apiKey, err := term.ReadPassword(int(os.Stdin.Fd()))
+			if err != nil {
+				return fmt.Errorf("failed to read API key: %w", err)
+			}
+			fmt.Println() // Print newline after hidden input
+
+			key := strings.TrimSpace(string(apiKey))
+			if key == "" {
+				return fmt.Errorf("API key cannot be empty")
+			}
+
+			cfg := &config.Config{APIKey: key}
+			if err := config.Save(cfg); err != nil {
+				return err
+			}
+
+			path, _ := config.Path()
+			fmt.Printf("API key saved to %s\n", path)
+			return nil
+		},
+	}
+}
+
 func printJSON(v any) error {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
@@ -362,20 +430,57 @@ func getOutputFormat(cmd *cli.Command) string {
 	return cmd.Root().String("output")
 }
 
+func isQuietMode(cmd *cli.Command) bool {
+	return cmd.Root().Bool("quiet")
+}
+
+// truncateURL truncates a URL to maxLen characters
+func truncateURL(url string, maxLen int) string {
+	if len(url) <= maxLen {
+		return url
+	}
+	return url[:maxLen-3] + "..."
+}
+
 func printSearchTable(resp *client.SearchResponse) {
-	tbl := table.New("Title", "URL", "Published")
-	for _, r := range resp.Results {
+	useColor := isTerminal()
+
+	// Disable color globally if not a TTY
+	if !useColor {
+		color.NoColor = true
+	}
+
+	headerFmt := color.New(color.FgWhite, color.Bold).SprintFunc()
+	numFmt := color.New(color.FgCyan).SprintFunc()
+
+	tbl := table.New("#", "Title", "URL", "Published")
+	tbl.WithHeaderFormatter(func(format string, vals ...interface{}) string {
+		return headerFmt(fmt.Sprintf(format, vals...))
+	})
+
+	for i, r := range resp.Results {
 		date := r.PublishedDate
 		if date == "" {
 			date = "-"
 		}
 		title := r.Title
-		if len(title) > 60 {
-			title = title[:57] + "..."
+		if len(title) > 55 {
+			title = title[:52] + "..."
 		}
-		tbl.AddRow(title, r.URL, date)
+		url := truncateURL(r.URL, 45)
+		num := fmt.Sprintf("%d", i+1)
+		if useColor {
+			num = numFmt(num)
+		}
+		tbl.AddRow(num, title, url, date)
 	}
 	tbl.Print()
+}
+
+func printSearchQuiet(resp *client.SearchResponse) {
+	for _, r := range resp.Results {
+		fmt.Println(r.URL)
+	}
 }
 
 func printContentsMarkdown(resp *client.ContentsResponse) {
@@ -414,6 +519,17 @@ func printContentsMarkdown(resp *client.ContentsResponse) {
 	}
 }
 
+func printContentsQuiet(resp *client.ContentsResponse) {
+	for i, r := range resp.Results {
+		if i > 0 {
+			fmt.Println()
+		}
+		if r.Text != "" {
+			fmt.Println(r.Text)
+		}
+	}
+}
+
 func printTOON(v any) error {
 	encoded, err := toon.Marshal(v, toon.WithLengthMarkers(true))
 	if err != nil {
@@ -424,7 +540,21 @@ func printTOON(v any) error {
 }
 
 func printOutput(cmd *cli.Command, v any) error {
+	quiet := isQuietMode(cmd)
 	format := getOutputFormat(cmd)
+
+	// Quiet mode overrides format for specific output types
+	if quiet {
+		switch resp := v.(type) {
+		case *client.SearchResponse:
+			printSearchQuiet(resp)
+			return nil
+		case *client.ContentsResponse:
+			printContentsQuiet(resp)
+			return nil
+		}
+	}
+
 	switch format {
 	case "json":
 		return printJSON(v)
