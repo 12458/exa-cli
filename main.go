@@ -41,14 +41,16 @@ func searchCmd() *cli.Command {
 		ArgsUsage: "<query>",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "type",
-				Usage: "Search type: auto, fast",
-				Value: "auto",
+				Name:    "type",
+				Aliases: []string{"t"},
+				Usage:   "Search type: auto, fast",
+				Value:   "auto",
 			},
 			&cli.IntFlag{
-				Name:  "num-results",
-				Usage: "Number of results (1-100)",
-				Value: 10,
+				Name:    "num-results",
+				Aliases: []string{"n"},
+				Usage:   "Number of results (1-100)",
+				Value:   10,
 			},
 			&cli.BoolFlag{
 				Name:  "text",
@@ -67,12 +69,14 @@ func searchCmd() *cli.Command {
 				Usage: "Text verbosity: compact, standard, full",
 			},
 			&cli.BoolFlag{
-				Name:  "highlights",
-				Usage: "Include highlights",
+				Name:    "highlights",
+				Aliases: []string{"H"},
+				Usage:   "Include highlights",
 			},
 			&cli.BoolFlag{
-				Name:  "summary",
-				Usage: "Include AI-generated summary",
+				Name:    "summary",
+				Aliases: []string{"s"},
+				Usage:   "Include AI-generated summary",
 			},
 			&cli.StringFlag{
 				Name:  "summary-query",
@@ -83,12 +87,14 @@ func searchCmd() *cli.Command {
 				Usage: "JSON schema for structured summary extraction",
 			},
 			&cli.StringSliceFlag{
-				Name:  "include-domains",
-				Usage: "Only include results from these domains",
+				Name:    "include-domains",
+				Aliases: []string{"i"},
+				Usage:   "Only include results from these domains",
 			},
 			&cli.StringSliceFlag{
-				Name:  "exclude-domains",
-				Usage: "Exclude results from these domains",
+				Name:    "exclude-domains",
+				Aliases: []string{"x"},
+				Usage:   "Exclude results from these domains",
 			},
 			&cli.StringFlag{
 				Name:  "start-published-date",
@@ -99,8 +105,9 @@ func searchCmd() *cli.Command {
 				Usage: "Filter by publish date (ISO 8601)",
 			},
 			&cli.StringFlag{
-				Name:  "category",
-				Usage: "Content category: company, people, tweet, news, research paper, personal site, financial report",
+				Name:    "category",
+				Aliases: []string{"c"},
+				Usage:   "Content category: company, people, tweet, news, research paper, personal site, financial report",
 			},
 			&cli.IntFlag{
 				Name:  "max-age-hours",
@@ -198,9 +205,10 @@ func contentsCmd() *cli.Command {
 		ArgsUsage: "<url> [url...]",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
-				Name:  "text",
-				Usage: "Include full text content",
-				Value: true,
+				Name:    "text",
+				Aliases: []string{"t"},
+				Usage:   "Include full text content",
+				Value:   true,
 			},
 			&cli.IntFlag{
 				Name:  "text-max-chars",
@@ -215,12 +223,14 @@ func contentsCmd() *cli.Command {
 				Usage: "Text verbosity: compact, standard, full",
 			},
 			&cli.BoolFlag{
-				Name:  "highlights",
-				Usage: "Include highlights",
+				Name:    "highlights",
+				Aliases: []string{"H"},
+				Usage:   "Include highlights",
 			},
 			&cli.BoolFlag{
-				Name:  "summary",
-				Usage: "Include AI-generated summary",
+				Name:    "summary",
+				Aliases: []string{"s"},
+				Usage:   "Include AI-generated summary",
 			},
 			&cli.StringFlag{
 				Name:  "summary-query",
@@ -231,8 +241,9 @@ func contentsCmd() *cli.Command {
 				Usage: "JSON schema for structured summary extraction",
 			},
 			&cli.IntFlag{
-				Name:  "subpages",
-				Usage: "Number of subpages to crawl",
+				Name:    "subpages",
+				Aliases: []string{"p"},
+				Usage:   "Number of subpages to crawl",
 			},
 			&cli.StringSliceFlag{
 				Name:  "subpage-target",
@@ -247,8 +258,9 @@ func contentsCmd() *cli.Command {
 				Usage: "Timeout in ms for live crawling",
 			},
 			&cli.BoolFlag{
-				Name:  "context",
-				Usage: "Return all results combined into a single string for RAG",
+				Name:    "context",
+				Aliases: []string{"c"},
+				Usage:   "Return all results combined into a single string for RAG",
 			},
 			&cli.IntFlag{
 				Name:  "context-max-chars",
