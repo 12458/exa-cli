@@ -7,7 +7,7 @@ A command-line interface for the [Exa API](https://exa.ai) - search the web and 
 ### Quick Install (Linux/macOS)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/12458/exa-cli/main/install.sh | bash
+curl -fsSL https://exa.tools.shangen.org/install.sh | bash
 ```
 
 ### Homebrew
