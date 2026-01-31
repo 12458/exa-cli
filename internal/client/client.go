@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	baseURL    = "https://api.exa.ai"
-	apiKeyEnv  = "EXA_API_KEY"
+	baseURL   = "https://api.exa.ai"
+	apiKeyEnv = "EXA_API_KEY"
 )
 
 type Client struct {
@@ -100,4 +100,3 @@ func (c *Client) GetContents(ctx context.Context, req *ContentsRequest) (*Conten
 	}
 	return &result, nil
 }
-
