@@ -1,4 +1,4 @@
-module 12458/exa-cli
+module github.com/12458/exa-cli
 
 go 1.25.6
 

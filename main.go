@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"12458/exa-cli/internal/client"
-	"12458/exa-cli/internal/config"
+	"github.com/12458/exa-cli/internal/client"
+	"github.com/12458/exa-cli/internal/config"
 
 	"github.com/fatih/color"
 	"github.com/rodaine/table"
