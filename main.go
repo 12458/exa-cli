@@ -16,6 +16,13 @@ func main() {
 	cmd := &cli.Command{
 		Name:  "exa",
 		Usage: "CLI tool for the Exa API",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "api-key",
+				Usage:   "Exa API key (overrides EXA_API_KEY environment variable)",
+				Sources: cli.EnvVars("EXA_API_KEY"),
+			},
+		},
 		Commands: []*cli.Command{
 			searchCmd(),
 			contentsCmd(),
@@ -106,7 +113,7 @@ func searchCmd() *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			c, err := client.New()
+			c, err := client.New(cmd.Root().String("api-key"))
 			if err != nil {
 				return err
 			}
@@ -254,7 +261,7 @@ func contentsCmd() *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			c, err := client.New()
+			c, err := client.New(cmd.Root().String("api-key"))
 			if err != nil {
 				return err
 			}

@@ -21,10 +21,12 @@ type Client struct {
 	httpClient *http.Client
 }
 
-func New() (*Client, error) {
-	apiKey := os.Getenv(apiKeyEnv)
+func New(apiKey string) (*Client, error) {
 	if apiKey == "" {
-		return nil, fmt.Errorf("environment variable %s is required", apiKeyEnv)
+		apiKey = os.Getenv(apiKeyEnv)
+	}
+	if apiKey == "" {
+		return nil, fmt.Errorf("API key required: set %s environment variable or use --api-key flag", apiKeyEnv)
 	}
 
 	return &Client{
