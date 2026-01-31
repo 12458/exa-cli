@@ -59,28 +59,28 @@ type ContentsRequest struct {
 
 // SearchResult represents a single search result
 type SearchResult struct {
-	Title         string   `json:"title"`
-	URL           string   `json:"url"`
-	PublishedDate string   `json:"publishedDate,omitempty"`
-	Author        string   `json:"author,omitempty"`
-	Score         float64  `json:"score,omitempty"`
-	ID            string   `json:"id"`
-	Text          string   `json:"text,omitempty"`
-	Highlights    []string `json:"highlights,omitempty"`
-	Summary       string   `json:"summary,omitempty"`
+	Title         string   `json:"title" toon:"title"`
+	URL           string   `json:"url" toon:"url"`
+	PublishedDate string   `json:"publishedDate,omitempty" toon:"publishedDate,omitempty"`
+	Author        string   `json:"author,omitempty" toon:"author,omitempty"`
+	Score         float64  `json:"score,omitempty" toon:"score,omitempty"`
+	ID            string   `json:"id" toon:"id"`
+	Text          string   `json:"text,omitempty" toon:"text,omitempty"`
+	Highlights    []string `json:"highlights,omitempty" toon:"highlights,omitempty"`
+	Summary       string   `json:"summary,omitempty" toon:"summary,omitempty"`
 }
 
 // SearchResponse represents the response from search and find-similar APIs
 type SearchResponse struct {
-	Results            []SearchResult `json:"results"`
-	AutopromptString   string         `json:"autopromptString,omitempty"`
-	ResolvedSearchType string         `json:"resolvedSearchType,omitempty"`
+	Results            []SearchResult `json:"results" toon:"results"`
+	AutopromptString   string         `json:"autopromptString,omitempty" toon:"autopromptString,omitempty"`
+	ResolvedSearchType string         `json:"resolvedSearchType,omitempty" toon:"resolvedSearchType,omitempty"`
 }
 
 // ContentStatus represents the status of a content fetch
 type ContentStatus struct {
-	ID     string `json:"id"`
-	Status string `json:"status"`
+	ID     string `json:"id" toon:"id"`
+	Status string `json:"status" toon:"status"`
 	Error  *struct {
 		Tag            string `json:"tag,omitempty"`
 		HTTPStatusCode int    `json:"httpStatusCode,omitempty"`
@@ -89,6 +89,6 @@ type ContentStatus struct {
 
 // ContentsResponse represents the response from the contents API
 type ContentsResponse struct {
-	Results  []SearchResult  `json:"results"`
-	Statuses []ContentStatus `json:"statuses,omitempty"`
+	Results  []SearchResult  `json:"results" toon:"results"`
+	Statuses []ContentStatus `json:"statuses,omitempty" toon:"statuses,omitempty"`
 }

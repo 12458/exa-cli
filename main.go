@@ -9,6 +9,8 @@ import (
 
 	"12458/exa-cli/internal/client"
 
+	"github.com/rodaine/table"
+	"github.com/toon-format/toon-go"
 	"github.com/urfave/cli/v3"
 )
 
@@ -21,6 +23,12 @@ func main() {
 				Name:    "api-key",
 				Usage:   "Exa API key (overrides EXA_API_KEY environment variable)",
 				Sources: cli.EnvVars("EXA_API_KEY"),
+			},
+			&cli.StringFlag{
+				Name:    "output",
+				Aliases: []string{"o"},
+				Usage:   "Output format: table, json, toon",
+				Value:   "table",
 			},
 		},
 		Commands: []*cli.Command{
@@ -193,7 +201,7 @@ func searchCmd() *cli.Command {
 				return err
 			}
 
-			return printJSON(result)
+			return printOutput(cmd, result)
 		},
 	}
 }
@@ -339,7 +347,7 @@ func contentsCmd() *cli.Command {
 				return err
 			}
 
-			return printJSON(result)
+			return printOutput(cmd, result)
 		},
 	}
 }
@@ -348,4 +356,89 @@ func printJSON(v any) error {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	return enc.Encode(v)
+}
+
+func getOutputFormat(cmd *cli.Command) string {
+	return cmd.Root().String("output")
+}
+
+func printSearchTable(resp *client.SearchResponse) {
+	tbl := table.New("Title", "URL", "Published")
+	for _, r := range resp.Results {
+		date := r.PublishedDate
+		if date == "" {
+			date = "-"
+		}
+		title := r.Title
+		if len(title) > 60 {
+			title = title[:57] + "..."
+		}
+		tbl.AddRow(title, r.URL, date)
+	}
+	tbl.Print()
+}
+
+func printContentsMarkdown(resp *client.ContentsResponse) {
+	for i, r := range resp.Results {
+		if i > 0 {
+			fmt.Println()
+		}
+		fmt.Println("---")
+		fmt.Printf("title: %q\n", r.Title)
+		fmt.Printf("url: %s\n", r.URL)
+		if r.PublishedDate != "" {
+			fmt.Printf("date: %q\n", r.PublishedDate)
+		}
+		if r.Author != "" {
+			fmt.Printf("author: %q\n", r.Author)
+		}
+		fmt.Println("---")
+		if r.Text != "" {
+			fmt.Println()
+			fmt.Println(r.Text)
+		}
+		if r.Summary != "" {
+			fmt.Println()
+			fmt.Println("## Summary")
+			fmt.Println()
+			fmt.Println(r.Summary)
+		}
+		if len(r.Highlights) > 0 {
+			fmt.Println()
+			fmt.Println("## Highlights")
+			fmt.Println()
+			for _, h := range r.Highlights {
+				fmt.Printf("- %s\n", h)
+			}
+		}
+	}
+}
+
+func printTOON(v any) error {
+	encoded, err := toon.Marshal(v, toon.WithLengthMarkers(true))
+	if err != nil {
+		return err
+	}
+	_, err = os.Stdout.Write(encoded)
+	return err
+}
+
+func printOutput(cmd *cli.Command, v any) error {
+	format := getOutputFormat(cmd)
+	switch format {
+	case "json":
+		return printJSON(v)
+	case "toon":
+		return printTOON(v)
+	default: // "table"
+		switch resp := v.(type) {
+		case *client.SearchResponse:
+			printSearchTable(resp)
+		case *client.ContentsResponse:
+			printContentsMarkdown(resp)
+		default:
+			return printJSON(v)
+		}
+	}
+	return nil
 }
