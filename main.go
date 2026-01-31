@@ -20,9 +20,10 @@ import (
 
 func main() {
 	cmd := &cli.Command{
-		Name:           "exa",
-		Usage:          "CLI tool for the Exa API",
-		DefaultCommand: "search",
+		Name:                  "exa",
+		Usage:                 "CLI tool for the Exa API",
+		DefaultCommand:        "search",
+		EnableShellCompletion: true,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "api-key",
@@ -45,6 +46,7 @@ func main() {
 			searchCmd(),
 			contentsCmd(),
 			configureCmd(),
+			completionCmd(),
 		},
 	}
 
@@ -419,6 +421,212 @@ func configureCmd() *cli.Command {
 		},
 	}
 }
+
+func completionCmd() *cli.Command {
+	return &cli.Command{
+		Name:  "completion",
+		Usage: "Generate shell completion scripts",
+		Commands: []*cli.Command{
+			{
+				Name:  "bash",
+				Usage: "Generate bash completion script",
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					fmt.Print(bashCompletion)
+					return nil
+				},
+			},
+			{
+				Name:  "zsh",
+				Usage: "Generate zsh completion script",
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					fmt.Print(zshCompletion)
+					return nil
+				},
+			},
+			{
+				Name:  "fish",
+				Usage: "Generate fish completion script",
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					fmt.Print(fishCompletion)
+					return nil
+				},
+			},
+		},
+	}
+}
+
+const bashCompletion = `# bash completion for exa CLI
+_exa_completions() {
+    local cur prev opts commands
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    commands="search contents configure completion help"
+    global_opts="--api-key --output -o --quiet -q --help -h"
+    search_opts="--type -t --num-results -n --text --text-max-chars --text-include-html --text-verbosity --highlights -H --summary -s --summary-query --summary-schema --include-domains -i --exclude-domains -x --start-published-date --end-published-date --category -c --max-age-hours"
+    contents_opts="--text -t --text-max-chars --text-include-html --text-verbosity --highlights -H --summary -s --summary-query --summary-schema --subpages -p --subpage-target --max-age-hours --livecrawl-timeout --context -C --context-max-chars"
+
+    case "${COMP_WORDS[1]}" in
+        search|s)
+            COMPREPLY=( $(compgen -W "${search_opts}" -- ${cur}) )
+            return 0
+            ;;
+        contents|c)
+            COMPREPLY=( $(compgen -W "${contents_opts}" -- ${cur}) )
+            return 0
+            ;;
+        completion)
+            COMPREPLY=( $(compgen -W "bash zsh fish" -- ${cur}) )
+            return 0
+            ;;
+    esac
+
+    if [[ ${cur} == -* ]]; then
+        COMPREPLY=( $(compgen -W "${global_opts}" -- ${cur}) )
+        return 0
+    fi
+
+    COMPREPLY=( $(compgen -W "${commands}" -- ${cur}) )
+    return 0
+}
+complete -F _exa_completions exa
+`
+
+const zshCompletion = `#compdef exa
+
+_exa() {
+    local -a commands
+    commands=(
+        'search:Search the web using Exa'
+        's:Search the web using Exa'
+        'contents:Get contents from URLs'
+        'c:Get contents from URLs'
+        'configure:Configure exa CLI settings'
+        'completion:Generate shell completion scripts'
+        'help:Shows a list of commands or help for one command'
+    )
+
+    _arguments -C \
+        '--api-key[Exa API key]:key:' \
+        '(-o --output)'{-o,--output}'[Output format]:format:(table json toon)' \
+        '(-q --quiet)'{-q,--quiet}'[Quiet mode]' \
+        '(-h --help)'{-h,--help}'[Show help]' \
+        '1:command:->command' \
+        '*::arg:->args'
+
+    case "$state" in
+        command)
+            _describe -t commands 'exa commands' commands
+            ;;
+        args)
+            case "${words[1]}" in
+                search|s)
+                    _arguments \
+                        '(-t --type)'{-t,--type}'[Search type]:type:(auto fast)' \
+                        '(-n --num-results)'{-n,--num-results}'[Number of results]:num:' \
+                        '--text[Include full text content]' \
+                        '--text-max-chars[Max chars for text]:chars:' \
+                        '--text-include-html[Include HTML tags]' \
+                        '--text-verbosity[Text verbosity]:verbosity:(compact standard full)' \
+                        '(-H --highlights)'{-H,--highlights}'[Include highlights]' \
+                        '(-s --summary)'{-s,--summary}'[Include AI summary]' \
+                        '--summary-query[Custom query for summary]:query:' \
+                        '--summary-schema[JSON schema for summary]:schema:' \
+                        '*'{-i,--include-domains}'[Include domains]:domain:' \
+                        '*'{-x,--exclude-domains}'[Exclude domains]:domain:' \
+                        '--start-published-date[Start date]:date:' \
+                        '--end-published-date[End date]:date:' \
+                        '(-c --category)'{-c,--category}'[Category]:category:(company people tweet news "research paper" "personal site" "financial report")' \
+                        '--max-age-hours[Max age in hours]:hours:' \
+                        '*:query:'
+                    ;;
+                contents|c)
+                    _arguments \
+                        '(-t --text)'{-t,--text}'[Include full text content]' \
+                        '--text-max-chars[Max chars for text]:chars:' \
+                        '--text-include-html[Include HTML tags]' \
+                        '--text-verbosity[Text verbosity]:verbosity:(compact standard full)' \
+                        '(-H --highlights)'{-H,--highlights}'[Include highlights]' \
+                        '(-s --summary)'{-s,--summary}'[Include AI summary]' \
+                        '--summary-query[Custom query for summary]:query:' \
+                        '--summary-schema[JSON schema for summary]:schema:' \
+                        '(-p --subpages)'{-p,--subpages}'[Number of subpages]:num:' \
+                        '*--subpage-target[Subpage target keywords]:keyword:' \
+                        '--max-age-hours[Max age in hours]:hours:' \
+                        '--livecrawl-timeout[Livecrawl timeout in ms]:timeout:' \
+                        '(-C --context)'{-C,--context}'[Return combined context]' \
+                        '--context-max-chars[Max chars for context]:chars:' \
+                        '*:url:_urls'
+                    ;;
+                completion)
+                    _arguments '1:shell:(bash zsh fish)'
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_exa "$@"
+`
+
+const fishCompletion = `# fish completion for exa CLI
+
+# Disable file completion by default
+complete -c exa -f
+
+# Commands
+complete -c exa -n __fish_use_subcommand -a search -d 'Search the web using Exa'
+complete -c exa -n __fish_use_subcommand -a s -d 'Search the web using Exa'
+complete -c exa -n __fish_use_subcommand -a contents -d 'Get contents from URLs'
+complete -c exa -n __fish_use_subcommand -a c -d 'Get contents from URLs'
+complete -c exa -n __fish_use_subcommand -a configure -d 'Configure exa CLI settings'
+complete -c exa -n __fish_use_subcommand -a completion -d 'Generate shell completion scripts'
+complete -c exa -n __fish_use_subcommand -a help -d 'Shows help'
+
+# Global options
+complete -c exa -l api-key -d 'Exa API key'
+complete -c exa -s o -l output -d 'Output format' -a 'table json toon'
+complete -c exa -s q -l quiet -d 'Quiet mode'
+complete -c exa -s h -l help -d 'Show help'
+
+# Search options
+complete -c exa -n '__fish_seen_subcommand_from search s' -s t -l type -d 'Search type' -a 'auto fast'
+complete -c exa -n '__fish_seen_subcommand_from search s' -s n -l num-results -d 'Number of results'
+complete -c exa -n '__fish_seen_subcommand_from search s' -l text -d 'Include full text content'
+complete -c exa -n '__fish_seen_subcommand_from search s' -l text-max-chars -d 'Max chars for text'
+complete -c exa -n '__fish_seen_subcommand_from search s' -l text-include-html -d 'Include HTML tags'
+complete -c exa -n '__fish_seen_subcommand_from search s' -l text-verbosity -d 'Text verbosity' -a 'compact standard full'
+complete -c exa -n '__fish_seen_subcommand_from search s' -s H -l highlights -d 'Include highlights'
+complete -c exa -n '__fish_seen_subcommand_from search s' -s s -l summary -d 'Include AI summary'
+complete -c exa -n '__fish_seen_subcommand_from search s' -l summary-query -d 'Custom query for summary'
+complete -c exa -n '__fish_seen_subcommand_from search s' -l summary-schema -d 'JSON schema for summary'
+complete -c exa -n '__fish_seen_subcommand_from search s' -s i -l include-domains -d 'Include domains'
+complete -c exa -n '__fish_seen_subcommand_from search s' -s x -l exclude-domains -d 'Exclude domains'
+complete -c exa -n '__fish_seen_subcommand_from search s' -l start-published-date -d 'Start date'
+complete -c exa -n '__fish_seen_subcommand_from search s' -l end-published-date -d 'End date'
+complete -c exa -n '__fish_seen_subcommand_from search s' -s c -l category -d 'Category' -a 'company people tweet news "research paper" "personal site" "financial report"'
+complete -c exa -n '__fish_seen_subcommand_from search s' -l max-age-hours -d 'Max age in hours'
+
+# Contents options
+complete -c exa -n '__fish_seen_subcommand_from contents c' -s t -l text -d 'Include full text content'
+complete -c exa -n '__fish_seen_subcommand_from contents c' -l text-max-chars -d 'Max chars for text'
+complete -c exa -n '__fish_seen_subcommand_from contents c' -l text-include-html -d 'Include HTML tags'
+complete -c exa -n '__fish_seen_subcommand_from contents c' -l text-verbosity -d 'Text verbosity' -a 'compact standard full'
+complete -c exa -n '__fish_seen_subcommand_from contents c' -s H -l highlights -d 'Include highlights'
+complete -c exa -n '__fish_seen_subcommand_from contents c' -s s -l summary -d 'Include AI summary'
+complete -c exa -n '__fish_seen_subcommand_from contents c' -l summary-query -d 'Custom query for summary'
+complete -c exa -n '__fish_seen_subcommand_from contents c' -l summary-schema -d 'JSON schema for summary'
+complete -c exa -n '__fish_seen_subcommand_from contents c' -s p -l subpages -d 'Number of subpages'
+complete -c exa -n '__fish_seen_subcommand_from contents c' -l subpage-target -d 'Subpage target keywords'
+complete -c exa -n '__fish_seen_subcommand_from contents c' -l max-age-hours -d 'Max age in hours'
+complete -c exa -n '__fish_seen_subcommand_from contents c' -l livecrawl-timeout -d 'Livecrawl timeout in ms'
+complete -c exa -n '__fish_seen_subcommand_from contents c' -s C -l context -d 'Return combined context'
+complete -c exa -n '__fish_seen_subcommand_from contents c' -l context-max-chars -d 'Max chars for context'
+
+# Completion subcommands
+complete -c exa -n '__fish_seen_subcommand_from completion' -a 'bash zsh fish' -d 'Shell type'
+`
 
 func printJSON(v any) error {
 	enc := json.NewEncoder(os.Stdout)
